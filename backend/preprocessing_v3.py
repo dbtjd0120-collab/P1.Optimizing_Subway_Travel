@@ -156,6 +156,7 @@ def preprocess_all():
             
             if to_line in valid_lines:
                 # [바구니 확인 및 생성]
+                # 해당 딕셔너리의 키 목록에 st_code가 없으면 새로 생성
                 if st_code not in transfer_dict:
                     transfer_dict[st_code] = {}
                 
@@ -165,17 +166,30 @@ def preprocess_all():
                 transfer_dict[st_code][f"{from_line}:{to_line}"] = {
                     "walk_sec": walk_sec,
                     "walk_distance": walk_distance
+                    # [데이터 구조 예시]
+                    # {
+                    #   "0150": {                 # [st_code] : 서울역 서랍을 연다
+                    #     "1:4": {                # [f"{from_line}:{to_line}"] : 그중 1호선→4호선 칸을 본다
+                    #       "walk_sec": 300,      # 실제 값 1
+                    #       "walk_distance": 250  # 실제 값 2
+                    #     },
+                    #     "1:A": {                # 공항철도 환승 정보 등 다른 칸도 있을 수 있음
+                    #       "walk_sec": 600,
+                    #       "walk_distance": 500
+                    #     }
+                    #   }
+                    # }
                 }
 
     # 저장 (indent=2를 주어 가독성 확보)
-    with open(f"{OUTPUT_DIR}transfer_list.json", 'w', encoding='utf-8') as f:
+    with open(f"{OUTPUT_DIR}transfer_list.json", 'w', encoding='EUC-KR') as f:
         json.dump(transfer_dict, f, ensure_ascii=False, indent=2)
     print(" -> transfer_list.json 저장 완료 (역사코드 기반 필터링 적용)")
 
     # 7. 역 목록(Station List) 저장
     # 유저가 역 이름으로 검색하면 해당 역의 '역사코드'를 찾기 위한 용도
     unique_stations = df[['역사코드', '역사명', '호선']].drop_duplicates().to_dict(orient='records')
-    with open(f"{OUTPUT_DIR}stations_list.json", 'w', encoding='utf-8') as f:
+    with open(f"{OUTPUT_DIR}stations_list.json", 'w', encoding='EUC-KR') as f:
         json.dump(unique_stations, f, ensure_ascii=False)
     print(" -> stations_list.json 저장 완료")
 
