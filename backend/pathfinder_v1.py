@@ -1,15 +1,15 @@
 import os
 import json
 import heapq
-import sys
-from datetime import datetime, timedelta
+from utils import TimeUtils
+import time
 
 # --- 경로 설정 ---
 current_file = os.path.abspath(__file__)
 backend_dir = os.path.dirname(current_file)
 project_root = os.path.dirname(backend_dir)
 DATA_DIR = os.path.join(project_root, 'data', 'processed')
-
+ 
 class SubwayPathfinder:
     def __init__(self, day_type='weekday'):
         print(f"[{day_type}] 데이터 로딩 중...")
@@ -47,18 +47,6 @@ class SubwayPathfinder:
             if name not in self.station_group:
                 self.station_group[name] = {}
             self.station_group[name][line] = code
-
-    def _seconds_to_str(self, seconds):
-        """초(int)를 HH:MM:SS 문자열로 변환"""
-        h = seconds // 3600
-        m = (seconds % 3600) // 60
-        s = seconds % 60
-        return f"{h:02}:{m:02}:{s:02}"
-
-    def _str_to_seconds(self, time_str):
-        """HH:MM 문자열을 초(int)로 변환"""
-        parts = list(map(int, time_str.split(':')))
-        return parts[0] * 3600 + parts[1] * 60
 
     def find_next_train(self, station_code, current_time):
         """
@@ -100,7 +88,7 @@ class SubwayPathfinder:
         if not start_codes or not end_codes:
             return {"error": "존재하지 않는 역입니다."}
 
-        start_time = self._str_to_seconds(departure_time_str)
+        start_time = TimeUtils.str_to_seconds(departure_time_str)
         
         # 우선순위 큐: (누적시간(도착시간), 현재역코드, 경로로그)
         # 경로로그: [{"name":..., "action": "RIDE"|"WALK", ...}]
@@ -123,7 +111,7 @@ class SubwayPathfinder:
                 "station": start_name,
                 "code": code,
                 "line": line,
-                "time": self._seconds_to_str(start_time),
+                "time": TimeUtils.seconds_to_str(start_time),
                 "type": "START"
             }]))
             min_times[code] = start_time
@@ -148,7 +136,7 @@ class SubwayPathfinder:
                     "status": "success",
                     "path": path_history,
                     "departure_time": departure_time_str,
-                    "arrival_time": self._seconds_to_str(current_time),
+                    "arrival_time": TimeUtils.seconds_to_str(current_time),
                     "duration_min": total_duration // 60,
                     "duration_sec": total_duration % 60
                 }
@@ -210,7 +198,7 @@ class SubwayPathfinder:
                             "code": dest_code,
                             "line": train['line'],
                             "train_code": train['train_code'],
-                            "time": self._seconds_to_str(arrival_time),
+                            "time": TimeUtils.seconds_to_str(arrival_time),
                             "type": "MOVE" # 열차 이동
                         }]
                         heapq.heappush(pq, (arrival_time, dest_code, new_path))
@@ -243,7 +231,7 @@ class SubwayPathfinder:
                                 "station": current_name,
                                 "code": target_code,
                                 "line": to_line_chk,
-                                "time": self._seconds_to_str(transfer_arrival_time),
+                                "time": TimeUtils.seconds_to_str(transfer_arrival_time),
                                 "walk_distance": val['walk_distance'],
                                 "type": "TRANSFER" # 환승
                             }]
