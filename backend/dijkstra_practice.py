@@ -130,8 +130,8 @@ def get_path(prev,start,end):
     path.reverse()
     return path
 
-start = input()
-end = input()
+start = input("출발 지점을 입력하세요 : ")
+end = input("도착지점을 입력하세요 : ")
 
 dist, prev = dijkstra(graph, start)
 path = get_path(prev,start, end)
