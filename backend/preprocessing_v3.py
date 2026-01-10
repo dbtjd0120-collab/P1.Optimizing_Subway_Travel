@@ -43,17 +43,15 @@ def time_str_to_seconds(t_str):
 def preprocess_all():
     # 1. 데이터 로딩
     print("데이터 로딩 중...")
-    # try:
         # 인코딩은 데이터 환경에 따라 cp949 또는 EUC-KR 선택
     df = pd.read_csv(TIMETABLE_PATH, encoding='EUC-KR', dtype={'역사코드': str, '호선': str, '열차코드': str})
     df_trans = pd.read_csv(TRANSFER_PATH, encoding='EUC-KR', dtype={'호선': str})
-        # df = pandas의 DataFrame 객체
-        # pandas의 read_csv는 기본적으로 숫자형 데이터를 숫자로 읽음
-        # 문자열로 지정되어야 하는 데이터가 숫자로 변환되는 것을 방지하기 위해 dtype 지정
-        # 나중에 "수인분당" 같은 호선명이 숫자로 바뀌는 문제 방지하기 위함.
-    # except:
-    #     df = pd.read_csv(TIMETABLE_PATH, encoding='cp949', dtype={'역사코드': str, '호선': str})
-    #     df_trans = pd.read_csv(TRANSFER_PATH, encoding='cp949', dtype={'호선': str})
+    """
+    df = pandas의 DataFrame 객체
+    pandas의 read_csv는 기본적으로 숫자형 데이터를 숫자로 읽음
+    문자열로 지정되어야 하는 데이터가 숫자로 변환되는 것을 방지하기 위해 dtype 지정
+    나중에 "수인분당" 같은 호선명이 숫자로 바뀌는 문제 방지하기 위함.
+    """
 
     # --- PART A: 열차 시간표 그래프 생성 ---
     
@@ -61,10 +59,12 @@ def preprocess_all():
     df['arr_sec'] = df['열차도착시간'].apply(time_str_to_seconds)
     df['dept_sec'] = df['열차출발시간'].apply(time_str_to_seconds)
     df['arr_sec'] = df['arr_sec'].fillna(df['dept_sec'])
+    """
     # 결국 출발시간 이전에만 도착하면 되니까 결측치는 0이 아닌 출발시간으로 대체
     # .fillna() : fill+na(Not Available) -> 결측치(NaN)를 채운다는 의미
     df = df.sort_values(by=['주중주말', '열차코드', 'arr_sec'])
     # 주중주말, 열차코드 순으로 정렬하고, 시간순으로도 정렬하면 유효한 간선(edge)데이터 추출 가능
+    """
 
     # 3. 다음 역 정보 연결 (Pandas의 Shift 사용 - for문 보다 훨씬 빠름)
     # 다음 행의 정보를 현재 행의 'next_' 컬럼(옆칸)으로 가져옴
@@ -74,17 +74,19 @@ def preprocess_all():
     df['next_train_code'] = df['열차코드'].shift(-1)
     
     # 4. 동일 열차인 간선(edge)만 추출
-    # 현재 행의 열차코드와 다음 행의 열차코드를 비교하여 같을 때만 유효한 간선으로 간주
-    # df['열차코드'] -> df의 열차코드 시리즈(세로줄 전체, 리스트 덩어리)
-    # df[조건] -> 시리즈를 비교해보며 조건에 맞는 행들만 필터링
-    # .copy() -> 원본df를 보존한 상태로 조건에 맞는 복사본 생성
-    # .copy()를 하지 않으면 원본의 일부를 참조하는 뷰(View)가 되어 이후 연산에서 SettingWithCopyWarning 경고 발생
+    """
+    현재 행의 열차코드와 다음 행의 열차코드를 비교하여 같을 때만 유효한 간선으로 간주
+    df['열차코드'] -> df의 열차코드 시리즈(세로줄 전체, 리스트 덩어리)
+    df[조건] -> 시리즈를 비교해보며 조건에 맞는 행들만 필터링
+    .copy() -> 원본df를 보존한 상태로 조건에 맞는 복사본 생성
+    .copy()를 하지 않으면 원본의 일부를 참조하는 뷰(View)가 되어 이후 연산에서 SettingWithCopyWarning 경고 발생
+    """
     valid_edges = df[df['열차코드'] == df['next_train_code']].copy()
     valid_edges['travel_time'] = valid_edges['next_arr_sec'] - valid_edges['dept_sec']
 
     # 5. 요일별 그래프 저장
     day_types = {'DAY': 'weekday', 'SAT': 'saturday', 'END': 'holiday'}
-    # OUTPUT_DIR 경로가 없으면 폴더 생성
+    """ OUTPUT_DIR 경로가 없으면 폴더 생성 """
     if not os.path.exists(OUTPUT_DIR): os.makedirs(OUTPUT_DIR)
 
     for raw_day, file_suffix in day_types.items():  # file_suffix(파일 접미사) -> 저장할 파일명에 들어갈 요일 구분자
@@ -107,27 +109,30 @@ def preprocess_all():
                     "express": row['급행여부']  ,           # 급행 여부
                 })
             graph[station_code].sort(key=lambda x: x['dept_time']) # 시간순 정렬 (이진 탐색 알고리즘 사용 위함)
-            # .sort(key) -> key 기준으로 리스트 정렬
-            # key= -> 정렬 기준 지정. 함수로 집어넣어야 함.
-            # lambda x : -> x를 결과값으로 주는 익명함수
-            # graph = {특정 역사코드 : {"dest_code": "0151", "dest_name": "시청", "dept_time": 32400, "line": "1", ... }}, ... 의 형식인데
-            # sort 함수가 정렬하려고 꺼낸 {"dest_code": "0151", "dest_name": "시청", ...} 부분을 x라고 받기로 한 거임.
-            # station_code를 key값으로 가지는 value를 x로 받는데, 그 x는 또 여러 개의 딕셔너리 형태인것임.
-            # x['dept_time'] -> 해당 딕셔너리 x에서 출발 시간에 해당하는 값 반환
-
-            # # lambda를 안쓰려면 함수를 한 번만 쓰더라도 따로 정의하고 사용해야 함
-            # def get_time(x):
-            #     return x['dept_time']
-            # graph[station_code].sort(key=get_time)
+            """
+            .sort(key) -> key 기준으로 리스트 정렬
+            key= -> 정렬 기준 지정. 함수로 집어넣어야 함.
+            lambda x : -> x를 결과값으로 주는 익명함수
+            graph = {특정 역사코드 : {"dest_code": "0151", "dest_name": "시청", "dept_time": 32400, "line": "1", ... }}, ... 의 형식인데
+            sort 함수가 정렬하려고 꺼낸 {"dest_code": "0151", "dest_name": "시청", ...} 부분을 x라고 받기로 한 거임.
+            station_code를 key값으로 가지는 value를 x로 받는데, 그 x는 또 여러 개의 딕셔너리 형태인것임.
+            x['dept_time'] -> 해당 딕셔너리 x에서 출발 시간에 해당하는 값 반환
+            # lambda를 안쓰려면 함수를 한 번만 쓰더라도 따로 정의하고 사용해야 함
+            def get_time(x):
+                return x['dept_time']
+            graph[station_code].sort(key=get_time)
+            """
 
         with open(f"{OUTPUT_DIR}graph_{file_suffix}.json", 'w', encoding='EUC-KR') as f:
             json.dump(graph, f, ensure_ascii=False)
-            # with...as f : -> 자원 획득/사용/반납 시에 사용, 이 블록이 끝나면 자동으로 f.close() 호출
-            # open(파일경로, 모드, 인코딩) -> 파일 열기
-            # 'w' -> 쓰기 모드 (파일이 없으면 새로 생성, 있으면 덮어씀)
-            # json.dump() -> 파이썬 디셔너리를 JSON 형태의 텍스트로 바꿔서 파일에 저장
-            # f -> with문에서 만든 파일 구멍
-            # ensure_ascii=False -> 한글이 깨지지 않도록 설정
+            """
+            with...as f : -> 자원 획득/사용/반납 시에 사용, 이 블록이 끝나면 자동으로 f.close() 호출
+            open(파일경로, 모드, 인코딩) -> 파일 열기
+            'w' -> 쓰기 모드 (파일이 없으면 새로 생성, 있으면 덮어씀)
+            json.dump() -> 파이썬 디셔너리를 JSON 형태의 텍스트로 바꿔서 파일에 저장
+            f -> with문에서 만든 파일 구멍
+            ensure_ascii=False -> 한글이 깨지지 않도록 설정
+            """
             print(f" -> graph_{file_suffix}.json 저장 완료")
 
     # --- PART B: 환승 소요 시간 데이터 처리 ---
@@ -165,20 +170,22 @@ def preprocess_all():
                 transfer_dict[st_code][f"{from_line}:{to_line}"] = {
                     "walk_sec": walk_sec,
                     "walk_distance": walk_distance
-                    # [데이터 구조 예시]
-                    # {
-                    #   "0150": {                 # [st_code] : 서울역 서랍을 연다
-                    #     "1:4": {                # [f"{from_line}:{to_line}"] : 그중 1호선→4호선 칸을 본다
-                    #       "walk_sec": 300,      # 실제 값 1
-                    #       "walk_distance": 250  # 실제 값 2
-                    #     },
-                    #     "1:A": {                # 공항철도 환승 정보 등 다른 칸도 있을 수 있음
-                    #       "walk_sec": 600,
-                    #       "walk_distance": 500
-                    #     }
-                    #   }
-                    # }
                 }
+                """
+                [데이터 구조 예시]
+                {
+                    "0150": {                           # [st_code] : 서울역 서랍을 연다
+                        "1:4": {                        # [f"{from_line}:{to_line}"] : 그중 1호선→4호선 칸을 본다
+                                "walk_sec": 300,        # 실제 값 1
+                                "walk_distance": 250    # 실제 값 2
+                            },
+                        "1:A": {                        # 공항철도 환승 정보 등 다른 칸도 있을 수 있음
+                            "walk_sec": 600,
+                            "walk_distance": 500
+                        }
+                    }
+                }
+                """
 
     # 저장 (indent=2로 줄바꿈과 띄어쓰기를 추가함)
     with open(f"{OUTPUT_DIR}transfer_list.json", 'w', encoding='EUC-KR') as f:
