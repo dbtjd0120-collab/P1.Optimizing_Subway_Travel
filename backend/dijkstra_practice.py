@@ -7,30 +7,32 @@ A -2- B -2- C
 """
 
 graph = {
-    "A":[{"to":"B","cost":2}],
-    "B":[{"to":"A","cost":2},
-         {"to":"C","cost":2},
-         {"to":"D","cost":1}],
-    "C":[{"to":"B","cost":2},
-         {"to":"E","cost":1}],
-    "D":[{"to":"B","cost":1},
-         {"to":"E","cost":2}],
-    "E":[{"to":"D","cost":2},
-         {"to":"C","cost":1}]
+    "A":[{"to":"B","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"C","travel_time":3,"is_express":"True","line":"1호선"}],
+    "B":[{"to":"A","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"C","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"D","travel_time":1,"is_express":"False","line":"2호선"}],
+    "C":[{"to":"B","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"E","travel_time":1,"is_express":"True","line":"2호선"}],
+    "D":[{"to":"B","travel_time":1,"is_express":"False","line":"1호선"},
+         {"to":"E","travel_time":2,"is_express":"False","line":"2호선"}],
+    "E":[{"to":"D","travel_time":2,"is_express":"False","line":"2호선"},
+         {"to":"C","travel_time":1,"is_express":"True","line":"1호선"}]
 }
-#환승에 대한 cost를 생각해봐야함 (환승이 이점이 되면 안되고 벌점이 되어야함)
+#환승에 대한 travel_time를 생각해봐야함 (환승이 이점이 되면 안되고 벌점이 되어야함)
 
 import heapq
 
 def dijkstra(graph,start):
     #1. 거리 테이블 초기화
-    dist = {node:float('inf') for node in graph}
-    dist[start] = 0
+    INF = (10**9,10**9)
+    dist = {node: INF for node in graph}
+    dist[start] = (0,0)
 
 
     #2. 우선순위 큐 (거리,노드)
     pq = []
-    heapq.heappush(pq,(0,start))
+    heapq.heappush(pq,((0,0),start,None))
     '''heapq 설명
     heap는 부모노드가 자식노드보다 무조건 작게 만들게끔
     가장 맨 앞에 나오는 요소가 가장 작은 값을 가질수 있게 만듦
@@ -78,10 +80,10 @@ def dijkstra(graph,start):
         C 처리 후   → [(5, E)]
         E 처리 후   → []
         ''' 
-        cur_dist, cur_node = heapq.heappop(pq)
+        (cur_transfer,cur_dist), cur_node,prev_line = heapq.heappop(pq)
 
         #이미 더 짧은 경로가 있으면 스킵
-        if cur_dist > dist[cur_node]:
+        if (cur_transfer,cur_dist) > dist[cur_node]:
             #만약 이 조건이 맞다면 while문의 다음 반복으로 넘어가라는 이야기
             continue
         # 현재 노드에서 갈 수 있는 곳들 확인
@@ -94,14 +96,20 @@ def dijkstra(graph,start):
 
             '''
             next_node = edge["to"]
-            cost = edge["cost"]
+            travel_time = edge["travel_time"]
+            train_is_express = edge["is_express"]
+            next_line = edge["line"]
+            add_transfer = 0
+            new_dist = cur_dist + travel_time
 
-            new_dist = cur_dist + cost
-
+            if prev_line is not None and prev_line != next_line:
+                add_transfer = 1
+            new_transfer = cur_transfer + add_transfer
+            new_cost = (new_transfer, new_dist)
             # 더 짧은 경로 발견 시 갱신
 
-            if new_dist < dist[next_node]:
-                dist[next_node] = new_dist
+            if new_cost < dist[next_node]:
+                dist[next_node] = new_cost
                 prev[next_node] = cur_node
                 '''prev[next_node]에 관한 설명
                 next_node에 최단 거리로 도달했을 때,
@@ -112,7 +120,9 @@ def dijkstra(graph,start):
                         "E": "D"
                         }    
                 '''
-                heapq.heappush(pq,(new_dist,next_node))
+                
+                heapq.heappush(pq,(new_cost,next_node,next_line))
+            
 
     return dist,prev
 #경로 복원 함수
@@ -138,9 +148,11 @@ end = input("도착지점을 입력하세요 : ")
 dist, prev = dijkstra(graph, start)
 path = get_path(prev,start, end)
 
-print("최단거리:",dist[end])
+print("최단거리:",dist[end][1])
+print("환승 횟수: ",dist[end][0])
 print("경로:"," -> ".join(path))
 '''join에 관한 설명
+
 join이란 리스트 안의 문자열들을 하나의 문자열로 이어붙이는 함수
 구분자.join(리스트) 를 사용하면 각 요소들 사이에 구분자가 들어가면서 자연스럽게 출력됨
 example)
@@ -154,5 +166,6 @@ path = ["A", 2, "B"]  # ❌ 에러
  ㄴ 필요하면 map(str,path)
 
 '''
+
 
 
