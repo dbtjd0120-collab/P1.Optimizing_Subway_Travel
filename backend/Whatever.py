@@ -22,11 +22,42 @@ class SubwayPathfinder:
 
     def _get_today_type(self):  # 날짜를 요일로   + 한국의 현재 시간을 불러오는 datetime.now().time()도 고려 해볼만함.
         """함수 정의 앞에 붙은 _ 하나는 내부용(private) 메서드임을 나타냄"""
-        def _get_today_type(self):
-            day_type = datetime.now().weekday() #오늘이 무슨 요일인지 월:0 - 일:6으로 표현
-            if day_type < 5: return 'weekday'
-            elif day_type == 5: return 'saturday'
-            else: return 'holiday'
+    
+        day_type = datetime.now().weekday() #오늘이 무슨 요일인지 월:0 - 일:6으로 표현
+        if day_type < 5: 
+            return 'weekday'
+        elif day_type == 5: 
+            return 'saturday'
+        else: 
+            return 'holiday'
+        
+
+    def _load_data(self):
+        try:
+            # --- 요일별 운행 그래프 파일 선택 ---
+            if self.day_type == 'weekday':
+                graph_file = 'graph_weekday.json'
+            elif self.day_type == 'saturday':
+                graph_file = 'graph_saturday.json'
+            else:  # holiday
+                graph_file = 'graph_holiday.json'
+
+            # --- 열차 운행 그래프 로드 ---
+            with open(os.path.join(DATA_DIR, graph_file), 'r', encoding='EUC-KR') as f:
+                self.graph = json.load(f)
+
+            # --- 환승 정보 로드 ---
+            with open(os.path.join(DATA_DIR, 'transfer_list.json'), 'r', encoding='EUC-KR') as f:
+                self.transfers = json.load(f)
+
+            # --- 역 메타 정보 로드 ---
+            with open(os.path.join(DATA_DIR, 'stations_list.json'), 'r', encoding='EUC-KR') as f:
+                self.stations_raw = json.load(f)
+
+        except Exception as e:
+            print(f"❌ 데이터 로딩 실패: {e}")
+            exit()
+
 
     def _build_indices(self):
         self.name_to_codes = {}
@@ -162,7 +193,7 @@ class SubwayPathfinder:
 
 
 
-    
+
     def _display_results(self, fastest, min_trans):
         def print_p(data, title):
             print(f"\n[ {title} ]")
