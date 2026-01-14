@@ -87,8 +87,8 @@ def preprocess_all():
     # .copy() -> 원본df를 보존한 상태로 조건에 맞는 복사본 생성
     # .copy()를 하지 않으면 원본의 일부를 참조하는 뷰(View)가 되어 이후 연산에서 SettingWithCopyWarning 경고 발생
     valid_edges = df[
-        (df['열차코드'] == df['next_train_code']) and 
-        (df['호선'] == df['next_line']) and
+        (df['열차코드'] == df['next_train_code']) & 
+        (df['호선'] == df['next_line']) &
         (df['역사코드'] != df['next_station_code'])
     ].copy()
     valid_edges['travel_time'] = valid_edges['next_arr_sec'] - valid_edges['dept_sec']
@@ -112,7 +112,6 @@ def preprocess_all():
                     "dest_code": row['next_station_code'],  # 다음 역 코드
                     "dest_name": row['next_station_name'],  # 다음 역 이름
                     "line": row['호선'],
-                    "train_code": row['열차코드'],
                     "dept_time": row['dept_sec'],           # 현재 역 출발 시간 (초)
                     "arr_time": row['next_arr_sec'],        # 다음 역 도착 시간 (초)
                     "express": row['급행여부']  ,           # 급행 여부
