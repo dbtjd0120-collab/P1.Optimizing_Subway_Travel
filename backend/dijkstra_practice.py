@@ -1,25 +1,30 @@
 """ 노드 형태
----3(급행)---
-|           |
-A -2- B -2- C
-      |     |
-      1     1(급행)
-      |     |
-      D -2- E
+            (3분, 급행)      [I]—2분—[J]
+          /           \   /
+[A]—2분—[B]—2분—[C]—2분—[D]—2분—[E]—2분—[F]
+                       /
+              [G]—2분—[H]
 """
 
 graph = {
-    "A":[{"to":"B","travel_time":2,"is_express":"False","line":"1호선"},
-         {"to":"C","travel_time":3,"is_express":"True","line":"1호선"}],
+    "A":[{"to":"B","travel_time":2,"is_express":"False","line":"1호선"}],
     "B":[{"to":"A","travel_time":2,"is_express":"False","line":"1호선"},
          {"to":"C","travel_time":2,"is_express":"False","line":"1호선"},
-         {"to":"D","travel_time":1,"is_express":"False","line":"2호선"}],
-    "C":[{"to":"B","travel_time":2,"is_express":"False","line":"1호선"},
-         {"to":"E","travel_time":1,"is_express":"True","line":"2호선"}],
-    "D":[{"to":"B","travel_time":1,"is_express":"False","line":"1호선"},
-         {"to":"E","travel_time":2,"is_express":"False","line":"2호선"}],
-    "E":[{"to":"D","travel_time":2,"is_express":"False","line":"2호선"},
-         {"to":"C","travel_time":1,"is_express":"True","line":"1호선"}]
+         {"to":"D","travel_time":3,"is_express":"True","line":"1호선"}],
+    "C":[{"to":"D","travel_time":2,"is_express":"False","line":"1호선"}],
+    "D":[{"to":"B","travel_time":3,"is_express":"True","line":"1호선"},
+         {"to":"E","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"I","travel_time":2,"is_express":"False","line":"2호선"},
+         {"to":"H","travel_time":2,"is_express":"False","line":"2호선"}],
+    "E":[{"to":"D","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"F","travel_time":2,"is_express":"False","line":"1호선"}],
+    "F":[{"to":"E","travel_time":2,"is_express":"False","line":"1호선"}],
+    "I":[{"to":"D","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"J","travel_time":2,"is_express":"False","line":"2호선"}],
+    "J":[{"to":"I","travel_time":2,"is_express":"False","line":"2호선"}],
+    "H":[{"to":"D","travel_time":2,"is_express":"False","line":"1호선"},
+         {"to":"G","travel_time":2,"is_express":"False","line":"2호선"}],
+    "G":[{"to":"H","travel_time":2,"is_express":"False","line":"2호선"}]
 }
 #환승에 대한 travel_time를 생각해봐야함 (환승이 이점이 되면 안되고 벌점이 되어야함)
 
